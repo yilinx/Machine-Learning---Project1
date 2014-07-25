@@ -1,0 +1,134 @@
+---
+output:
+  html_document:
+    css: table.css
+---
+#Weight lifting excercises
+</BR>
+</BR>
+##Introduction
+
+The aim of this piece of work is to explore using machine learning to determine how "correctly" one perfroms their physical workout. This is extremely important especially in atheletes and elderlies who are more susceptible to injuries from physical workouts.
+
+In this study, large amount of data were collected from 6 participants. These data were from accelerometers on the belt, forearm, arm, and dumbell. The participant were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+
+In this work, the sensor data are being divided into 3 datasets. The training set, the testing set and the validation set. 
+
+The strategy adopted to perform the machine learning is as follows:
+1. Conduct various types of machine learning on the training set to construct the prediction model
+2. Perform out of sample error estimation by applying the prediction model on the testing dataset
+3. Select the most accurate prediction model
+4. Apply the selected model on the validation set
+
+
+```{r getfiles, echo=FALSE,cache=TRUE}
+
+# download and read the training and testing files
+library(caret)
+library(gbm)
+setInternet2(TRUE)
+#trainfileloc <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+#validatefileloc <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+#download.file(trainfileloc, "training.csv")
+#download.file(validatefileloc, "validate.csv")
+
+train <- read.csv("training.csv",na.strings=c("NA",""), stringsAsFactors=F)
+validate <- read.csv("validate.csv")
+
+set.seed(1234)
+inTrain <- createDataPartition(y=train$classe, p=0.7, list=F)
+
+test <- train[-inTrain,]
+train <- train[inTrain,]
+```
+
+##Data processing
+Before we proceed to perform the machine learning on the data, the raw data must be processed to extract variables that are relevant for predictions and to addresss missing and/or NA values.
+
+The approach taken is as follows:
+1. Remove features having almost zero variance: This is to remove variables with very few unique values
+2. Remove features with many NAs: Analysis into the training dataset showed that most of the columns either have more than 90% of NAs or less than 10% of NAs. Hence columns having more than 90% values being NAs are removed from the analysis
+3. Keep data with complete cases
+```{r preprocess strategy, cache=TRUE}
+
+#remove near zero value
+nzv <- nearZeroVar(train)
+train.process <- train[,-nzv]
+
+#remove columns with large number of NA
+na.test <- function(x) {
+        sum(is.na(x))
+        }
+try <- apply(train.process,2,na.test)
+try <- try/nrow(train.process)*100    #percentage of NAs in each column
+try.select <- data.frame(try[try<0.9])  #keep columns having less than 90% of NA values, ie more         than 90% of enerties are NA, we discard the column
+
+train.process <- subset(train.process, select=c(rownames(try.select)))
+
+#remove some column names such as "X", "user_name", "raw_timestamp_part_1", 
+#"raw_timestamp_part_2", "cvtd_timestamp", "num_window" 
+train.process <- train.process[,-(1:6)]
+train.proC <- train.process[complete.cases(train.process),]   #keep only completecase enteries
+
+```
+
+## Machine Learning
+To ensure the reproducibility of the results, 4567 is set as the seed for the calculations.
+
+The models experimented include
+1. RandomForest
+2. Stochastic Gradient Boosting
+3. Linear Discriminant Analysis
+4. RandomForest with principle component analysis (PCA) implemented
+
+The reason for experimenting a random forest model with PCA implemented is to study the accuracy difference of random forest with and without PCA. As random forest is a very computation intensive learning algorithm, if the accuracy is not affected by the presence of PCA, it would be worth considering trading off a little accuracy for faster computation time.
+
+To obtain better acccuracy, a 10-fold cross validation was used with the command 
+  trainControl(method="cv", number=10)
+
+In the PCA preprocessing step, a threshold was set to collect 99% of the variance in the data.
+
+
+```{r ModelTesting, cache=TRUE}
+set.seed(4567)
+
+#train control setting
+fitControl <- trainControl(method="cv", number=10)
+fitControl.pca <- trainControl(method="cv", number=10, preProcOptions = list(thresh = 0.99, ICAcomp = 3, k = 5))
+
+#various types of models
+
+#randomForest model
+modFit.rf <- train(factor(classe)~., method="rf", trControl = fitControl, data=train.proC)   
+
+#gbm model
+modFit.gbm <- train(factor(classe)~., method="gbm", trControl=fitControl, data=train.proC, verbose=F)
+
+#lda model
+modFit.lda <- train(factor(classe)~., method="lda", trControl=fitControl, data=train.proC)
+
+#randomForest with pca model
+modFit.rfpca <- train(factor(classe)~., method="rf", trControl = fitControl.pca, preProcess = "pca", data=train.proC)
+
+```
+
+##Accuracy Results
+```{r AccuracyComparison}
+calacc <- function(modelObj,trueval,testdataframe){
+        acc <- confusionMatrix(trueval,predict(modelObj,testdataframe))
+        acc <- acc$overall[1]
+        return(acc)
+        }
+
+modList <- c("modFit.rf","modFit.gbm","modFit.lda","modFit.rfpca")
+calsummary <- data.frame(mapply(calacc,modList,rep("test$classe",4),rep("test",4)))
+
+#acc(modFit.rf,test$classe,test)
+
+```
+
+```{r table1, echo=FALSE, results='asis'}
+print(xtable(calsummary), type="html", include.rownames = F)
+
+```

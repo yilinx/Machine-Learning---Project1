@@ -1,0 +1,21 @@
+table {
+   max-width: 95%;
+   border: 1px solid #4F81BD;
+   
+}
+ 
+th {
+  /*background-color: #D3DFEE;*/
+  color: #000000;
+  border-top:3px solid #4F81BD;
+  border-bottom:3px solid #4F81BD;
+  text-align:center;
+  padding-left:12px;
+   padding-right:12px;
+}
+ 
+td {
+  
+  text-align:center;
+    
+}
