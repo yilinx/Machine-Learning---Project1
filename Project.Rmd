@@ -112,16 +112,16 @@ fitControl.pca <- trainControl(method="cv", number=10, preProcOptions = list(thr
 #various types of models
 
 #randomForest model
-modFit.rf <- train(factor(classe)~., method="rf", trControl = fitControl, data=train.proC)   
+lag.rf <- system.time(modFit.rf <- train(factor(classe)~., method="rf", trControl = fitControl, data=train.proC))  
 
 #gbm model
-modFit.gbm <- train(factor(classe)~., method="gbm", trControl=fitControl, data=train.proC, verbose=F)
+lag.gbm <- system.time(modFit.gbm <- train(factor(classe)~., method="gbm", trControl=fitControl, data=train.proC, verbose=F))
 
 #lda model
-modFit.lda <- train(factor(classe)~., method="lda", trControl=fitControl, data=train.proC)
+lag.lda <- system.time(modFit.lda <- train(factor(classe)~., method="lda", trControl=fitControl, data=train.proC))
 
 #randomForest with pca model
-modFit.rfpca <- train(factor(classe)~., method="rf", trControl = fitControl.pca, preProcess = "pca", data=train.proC)
+lag.rfpca <- system.time(modFit.rfpca <- train(factor(classe)~., method="rf", trControl = fitControl.pca, preProcess = "pca", data=train.proC))
 
 ```
 
@@ -133,9 +133,9 @@ calacc <- function(modelObj,trueval,testdataframe){
         return(acc)
         }
 
-modList <- c(modFit.rf,modFit.gbm,modFit.lda,modFit.rfpca)
+modList <- list(modFit.rf,modFit.gbm,modFit.lda,modFit.rfpca)
 calsummary <- data.frame(mapply(calacc,modList,rep("test$classe",4),rep("test",4)))
-
+modList <- c("modFit.rf","modFit.gbm","modFit.lda","modFit.rfpca")
 #acc(modFit.rf,test$classe,test)
 
 ```
