@@ -1,12 +1,13 @@
 ---
 output:
   html_document:
-    css: table.css
+    css: custom.css
 ---
 # Weight lifting excercises
 </BR>
 </BR>
-## Introduction
+
+## Introduction ##
 
 The aim of this piece of work is to explore using machine learning to determine how "correctly" one perfroms their physical workout. This is extremely important especially in atheletes and elderlies who are more susceptible to injuries from physical workouts.
 
@@ -25,12 +26,12 @@ The strategy adopted to perform the machine learning is as follows:
 4. Apply the selected model on the validation set
 
 
-```{r getfiles, echo=True,cache=TRUE, message=FALSE,warning=FALSE,error=FALSE}
+```{r getfiles,cache=TRUE, message=FALSE,warning=FALSE,error=FALSE}
 
 # download and read the training and testing files
 library(caret)
 library(gbm)
-setInternet2(TRUE)
+#setInternet2(TRUE)
 #trainfileloc <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
 #validatefileloc <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
 
@@ -127,20 +128,25 @@ lag.rfpca <- system.time(modFit.rfpca <- train(factor(classe)~., method="rf", tr
 
 ##Accuracy Results
 ```{r AccuracyComparison, message=FALSE,warning=FALSE,error=FALSE}
-calacc <- function(modelObj,trueval,testdataframe){
-        acc <- confusionMatrix(trueval,predict(modelObj,testdataframe))
-        acc <- acc$overall[1]
-        return(acc)
-        }
+library(caret)
+calacc <- function(modelObj){
+  acc <- confusionMatrix(test$classe,predict(modelObj,test))
+  acc <- acc$overall[1]
+  return(acc)
+}
 
 modList <- list(modFit.rf,modFit.gbm,modFit.lda,modFit.rfpca)
-calsummary <- data.frame(mapply(calacc,modList,rep("test$classe",4),rep("test",4)))
-modList <- c("modFit.rf","modFit.gbm","modFit.lda","modFit.rfpca")
-#acc(modFit.rf,test$classe,test)
-
+calsummary <- data.frame(lapply(modList,calacc))
+names(calsummary) <- c("RandomForest","GBM","LDA","RandomForest-PCA")
+calsummary <- rbind(calsummary,c(lag.rf[3],lag.gbm[3],lag.lda[3],lag.rfpca[3]))
+row.names(calsummary) <- c("Accuracy","Elapsed Time")
 ```
 
 ```{r table1, echo=FALSE, results='asis'}
-print(xtable(calsummary), type="html", include.rownames = F)
+library(xtable)
+print(xtable(calsummary), type="html", include.rownames = T)
 
 ```
+
+</BR>
+</BR>

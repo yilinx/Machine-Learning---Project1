@@ -36,6 +36,7 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 </script>
 
 
+<link href="data:text/css,table%20%7B%0A%20%20%20max%2Dwidth%3A%2095%25%3B%0A%20%20%20border%3A%201px%20solid%20%234F81BD%3B%0A%20%20%20%0A%7D%0A%20%0Ath%20%7B%0A%20%20%2F%2Abackground%2Dcolor%3A%20%23D3DFEE%3B%2A%2F%0A%20%20color%3A%20%23000000%3B%0A%20%20border%2Dtop%3A3px%20solid%20%234F81BD%3B%0A%20%20border%2Dbottom%3A3px%20solid%20%234F81BD%3B%0A%20%20text%2Dalign%3Acenter%3B%0A%20%20padding%2Dleft%3A12px%3B%0A%20%20%20padding%2Dright%3A12px%3B%0A%7D%0A%20%0Atd%20%7B%0A%20%20%0A%20%20text%2Dalign%3Acenter%3B%0A%20%20%20%20%0A%7D" rel="stylesheet" type="text/css" />
 
 </head>
 
@@ -55,28 +56,47 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 
 <div id="weight-lifting-excercises" class="section level1">
 <h1>Weight lifting excercises</h1>
-<p></BR> </BR> ##Introduction</p>
+<p></BR> </BR></p>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
 <p>The aim of this piece of work is to explore using machine learning to determine how “correctly” one perfroms their physical workout. This is extremely important especially in atheletes and elderlies who are more susceptible to injuries from physical workouts.</p>
 <p>In this study, large amount of data were collected from 6 participants. These data were from accelerometers on the belt, forearm, arm, and dumbell. The participant were asked to perform barbell lifts correctly and incorrectly in 5 different ways.</p>
 <p>In this work, the sensor data are being divided into 3 datasets. The training set, the testing set and the validation set.</p>
-<p>The strategy adopted to perform the machine learning is as follows: 1. Conduct various types of machine learning on the training set to construct the prediction model 2. Perform out of sample error estimation by applying the prediction model on the testing dataset 3. Select the most accurate prediction model 4. Apply the selected model on the validation set</p>
-<pre><code>## Loading required package: lattice
-## Loading required package: ggplot2
-## Loading required package: survival
-## Loading required package: splines
-## 
-## Attaching package: 'survival'
-## 
-## The following object is masked from 'package:caret':
-## 
-##     cluster
-## 
-## Loading required package: parallel
-## Loaded gbm 2.1</code></pre>
+<p>The strategy adopted to perform the machine learning is as follows:</p>
+<ol style="list-style-type: decimal">
+<li><p>Conduct various types of machine learning on the training set to construct the prediction model</p></li>
+<li><p>Perform out of sample error estimation by applying the prediction model on the testing dataset</p></li>
+<li><p>Select the most accurate prediction model</p></li>
+<li><p>Apply the selected model on the validation set</p></li>
+</ol>
+<pre class="r"><code># download and read the training and testing files
+library(caret)
+library(gbm)
+#setInternet2(TRUE)
+#trainfileloc &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;
+#validatefileloc &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;
+
+#download.file(trainfileloc, &quot;training.csv&quot;)
+#download.file(validatefileloc, &quot;validate.csv&quot;)
+
+train &lt;- read.csv(&quot;training.csv&quot;,na.strings=c(&quot;NA&quot;,&quot;&quot;), stringsAsFactors=F)
+validate &lt;- read.csv(&quot;validate.csv&quot;)
+
+set.seed(1234)
+inTrain &lt;- createDataPartition(y=train$classe, p=0.7, list=F)
+
+test &lt;- train[-inTrain,]
+train &lt;- train[inTrain,]</code></pre>
+</div>
 <div id="data-processing" class="section level2">
 <h2>Data processing</h2>
 <p>Before we proceed to perform the machine learning on the data, the raw data must be processed to extract variables that are relevant for predictions and to addresss missing and/or NA values.</p>
-<p>The approach taken is as follows: 1. Remove features having almost zero variance: This is to remove variables with very few unique values 2. Remove features with many NAs: Analysis into the training dataset showed that most of the columns either have more than 90% of NAs or less than 10% of NAs. Hence columns having more than 90% values being NAs are removed from the analysis 3. Keep data with complete cases</p>
+<p>The approach taken is as follows:</p>
+<ol style="list-style-type: decimal">
+<li><p>Remove features having almost zero variance: This is to remove variables with very few unique values</p></li>
+<li><p>Remove features with many NAs: Analysis into the training dataset showed that most of the columns either have more than 90% of NAs or less than 10% of NAs. Hence columns having more than 90% values being NAs are removed from the analysis</p></li>
+<li><p>Keep data with complete cases</p></li>
+</ol>
 <pre class="r"><code>#remove near zero value
 nzv &lt;- nearZeroVar(train)
 train.process &lt;- train[,-nzv]
@@ -99,7 +119,16 @@ train.proC &lt;- train.process[complete.cases(train.process),]   #keep only comp
 <div id="machine-learning" class="section level2">
 <h2>Machine Learning</h2>
 <p>To ensure the reproducibility of the results, 4567 is set as the seed for the calculations.</p>
-<p>The models experimented include 1. RandomForest 2. ???</p>
+<p>The models experimented include</p>
+<ol style="list-style-type: decimal">
+<li><p>RandomForest</p></li>
+<li><p>Stochastic Gradient Boosting</p></li>
+<li><p>Linear Discriminant Analysis</p></li>
+<li><p>RandomForest with principle component analysis (PCA) implemented</p></li>
+</ol>
+<p>The reason for experimenting a random forest model with PCA implemented is to study the accuracy difference of random forest with and without PCA. As random forest is a very computation intensive learning algorithm, if the accuracy is not affected by the presence of PCA, it would be worth considering trading off a little accuracy for faster computation time.</p>
+<p>To obtain better acccuracy, a 10-fold cross validation was used with the command trainControl(method=“cv”, number=10)</p>
+<p>In the PCA preprocessing step, a threshold was set to collect 99% of the variance in the data.</p>
 <pre class="r"><code>set.seed(4567)
 
 #train control setting
@@ -109,35 +138,68 @@ fitControl.pca &lt;- trainControl(method=&quot;cv&quot;, number=10, preProcOptio
 #various types of models
 
 #randomForest model
-modFit.rf &lt;- train(factor(classe)~., method=&quot;rf&quot;, trControl = fitControl, data=train.proC)   </code></pre>
-<pre><code>## Loading required package: randomForest
-## randomForest 4.6-10
-## Type rfNews() to see new features/changes/bug fixes.</code></pre>
-<pre class="r"><code>#gbm model
-modFit.gbm &lt;- train(factor(classe)~., method=&quot;gbm&quot;, trControl=fitControl, data=train.proC, verbose=F)</code></pre>
-<pre><code>## Loading required package: plyr</code></pre>
-<pre class="r"><code>#lda model
-modFit.lda &lt;- train(factor(classe)~., method=&quot;lda&quot;, trControl=fitControl, data=train.proC)</code></pre>
-<pre><code>## Loading required package: MASS</code></pre>
-<pre class="r"><code>#randomForest with pca model
-modFit.rfpca &lt;- train(factor(classe)~., method=&quot;rf&quot;, trControl = fitControl.pca, preProcess = &quot;pca&quot;, data=train.proC)</code></pre>
-<pre><code>## Warning: invalid mtry: reset to within valid range
-## Warning: invalid mtry: reset to within valid range
-## Warning: invalid mtry: reset to within valid range
-## Warning: invalid mtry: reset to within valid range
-## Warning: invalid mtry: reset to within valid range
-## Warning: invalid mtry: reset to within valid range
-## Warning: invalid mtry: reset to within valid range
-## Warning: invalid mtry: reset to within valid range
-## Warning: invalid mtry: reset to within valid range
-## Warning: invalid mtry: reset to within valid range</code></pre>
-<pre class="r"><code>calacc &lt;- function(modelObj,trueval,testdataframe){
-        acc &lt;- confusionMatrix(trueval,predict(modelObj,testdataframe))
-        acc &lt;- acc$overall[1]
-        return(acc)
-        }
+lag.rf &lt;- system.time(modFit.rf &lt;- train(factor(classe)~., method=&quot;rf&quot;, trControl = fitControl, data=train.proC))  
 
-#acc(modFit.rf,test$classe,test)</code></pre>
+#gbm model
+lag.gbm &lt;- system.time(modFit.gbm &lt;- train(factor(classe)~., method=&quot;gbm&quot;, trControl=fitControl, data=train.proC, verbose=F))
+
+#lda model
+lag.lda &lt;- system.time(modFit.lda &lt;- train(factor(classe)~., method=&quot;lda&quot;, trControl=fitControl, data=train.proC))
+
+#randomForest with pca model
+lag.rfpca &lt;- system.time(modFit.rfpca &lt;- train(factor(classe)~., method=&quot;rf&quot;, trControl = fitControl.pca, preProcess = &quot;pca&quot;, data=train.proC))</code></pre>
+</div>
+<div id="accuracy-results" class="section level2">
+<h2>Accuracy Results</h2>
+<pre class="r"><code>library(caret)
+calacc &lt;- function(modelObj){
+  acc &lt;- confusionMatrix(test$classe,predict(modelObj,test))
+  acc &lt;- acc$overall[1]
+  return(acc)
+}
+
+modList &lt;- list(modFit.rf,modFit.gbm,modFit.lda,modFit.rfpca)
+calsummary &lt;- data.frame(lapply(modList,calacc))
+names(calsummary) &lt;- c(&quot;RandomForest&quot;,&quot;GBM&quot;,&quot;LDA&quot;,&quot;RandomForest-PCA&quot;)
+calsummary &lt;- rbind(calsummary,c(lag.rf[3],lag.gbm[3],lag.lda[3],lag.rfpca[3]))
+row.names(calsummary) &lt;- c(&quot;Accuracy&quot;,&quot;Elapsed Time&quot;)</code></pre>
+<!-- html table generated in R 3.1.1 by xtable 1.7-3 package -->
+<!-- Wed Jul 30 12:46:03 2014 -->
+<TABLE border="1">
+<TR> <TH>  </TH> <TH> 
+RandomForest
+</TH> <TH> 
+GBM
+</TH> <TH> 
+LDA
+</TH> <TH> 
+RandomForest-PCA
+</TH>  </TR>
+  <TR> <TD align="right"> 
+Accuracy
+</TD> <TD align="right"> 
+0.99
+</TD> <TD align="right"> 
+0.97
+</TD> <TD align="right"> 
+0.70
+</TD> <TD align="right"> 
+0.98
+</TD> </TR>
+  <TR> <TD align="right"> 
+Elapsed Time
+</TD> <TD align="right"> 
+2086.81
+</TD> <TD align="right"> 
+733.04
+</TD> <TD align="right"> 
+6.48
+</TD> <TD align="right"> 
+1496.22
+</TD> </TR>
+   </TABLE>
+
+<p></BR> </BR></p>
 </div>
 </div>
 
