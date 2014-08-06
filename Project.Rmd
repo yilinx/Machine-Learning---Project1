@@ -142,6 +142,8 @@ calsummary <- rbind(calsummary,c(lag.rf[3],lag.gbm[3],lag.lda[3],lag.rfpca[3]))
 row.names(calsummary) <- c("Accuracy","Elapsed Time")
 ```
 
+</BR>
+
 ```{r table1, echo=FALSE, results='asis'}
 library(xtable)
 print(xtable(calsummary), type="html", include.rownames = T)
@@ -149,4 +151,23 @@ print(xtable(calsummary), type="html", include.rownames = T)
 ```
 
 </BR>
+
+From the table above, we see that using PCA to reduce the rank of the training set does not give significantly less processing time. Hence considering the amount of time used and the accuracy, we would use the Random Forest model as or final model. 
 </BR>
+</BR>
+
+## Exploratory Analysis ##
+
+In this section, it would be interesting to explore the relationships among the top 5 most important variables used for modelling (Random Forest).
+
+```{r importantvariable, fig.height=6.67, fig.width=8.89}
+x <- varImp(modFit.rf)$importance
+x <- row.names(x)
+x <- x[1:5]
+train.sub <- subset(train, select=c(x,"classe"))
+train.sub$classe <- factor(train.sub$classe)
+
+featurePlot(x=train.sub[,-6], y=train.sub[,6],plot="pairs", auto.key=list(columns=5))
+```
+
+From the plot above, we see that "roll_belt" variable gives very distinct clustering of the data. This might suggest that it helps captures most of the key features in the dataset. As compared to "gyros_belt_x", which has a larger tendency to form featureless plots.
