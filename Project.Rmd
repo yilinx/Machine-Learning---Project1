@@ -2,7 +2,12 @@
 output:
   html_document:
     css: custom.css
+    self_contained: no
 ---
+```{r optionssetting, echo=FALSE}
+options(markdown.HTML.options = c("use_xhtml","smartypants","mathjax","highlight_code"))
+```
+
 # Weight lifting excercises
 </BR>
 </BR>
